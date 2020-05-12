@@ -11,6 +11,44 @@ int S = 0;                                      /* número de supermercados */
 int M = 0;                                      /* número de avenidas (vertical) */
 int N = 0;                                      /* número de ruas (horizontal) */
 	
+typedef struct graph *Graph;
+typedef struct node *link;
+
+struct node {
+    int n;  /*precisa de n? ja ta na posicao mas ok*/                                    /* cada elemento das listas, guarda um índice de um vertice */
+    int visited;
+    int supermarket;
+    int citizen;
+};
+
+
+struct graph {
+    int total;                                      /* número de vértices (vertexes) */
+    link* adj;
+    link* c;
+    link* s;
+};
+
+Graph initializeGraph() {
+    int i;
+    Graph G = malloc(sizeof(struct graph));
+    G->total = N*M;
+    G->c = malloc(C*sizeof(link));
+    G->s = malloc(S*sizeof(link));
+    G->adj = malloc((G->total+1) * sizeof(link));
+    for (i = 0; i <= S; i++) {
+        
+    }
+
+    for (i = 0; i <= G->total; i++) {
+        link x = malloc(sizeof(struct node));
+        x->n = i;
+        x->visited = 0;
+        G->adj[i] = x;
+    }
+    return G;
+}
+
 
 int** createList (int size) {
     int** list;
@@ -98,9 +136,11 @@ int main() {
 
     scanf("%d %d", &M, &N); /*avenidas e ruas*/
     scanf("%d %d", &S, &C); /*supermercados e cidadaos*/
+
+
+    Graph G = initializeGraph();    
+    createLists(G);
     
-    int **supermarkets = createList(S);
-    int **citizens = createList(C);
     
     fillLists(&supermarkets, &citizens);
     
