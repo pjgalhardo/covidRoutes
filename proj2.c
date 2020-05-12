@@ -32,12 +32,15 @@ void fillLists(int*** super, int*** citi) {
         scanf("%d %d", &av, &rua);
         (*super)[i][0] = av;
         (*super)[i][1] = rua;
+        printf("%d %d\n", av, rua);
     }
 
     for (i = 0; i < C; i++) {
         scanf("%d %d", &av, &rua);
         (*citi)[i][0] = av;
         (*citi)[i][1] = rua;
+        printf("%d %d\n", av, rua);
+
     }
 
 }
@@ -74,10 +77,9 @@ void printGrid(int **supermercados, int **cidadaos) {
     
 
     for (i = 0; i < N; i++) {
-        for (j = M; j > 0; j--) {
-
-            citi = isCitizen(i+1, j, cidadaos);
-            super = isSupermarket(i+1, j, supermercados);
+        for (j = 0; j < M; j++) {
+            citi = isCitizen(j+1, i+1, cidadaos);
+            super = isSupermarket(j+1, i+1, supermercados);
             if (citi != 0) {
                 printf("%d  ", citi);
             }
