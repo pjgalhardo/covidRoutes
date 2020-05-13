@@ -30,122 +30,74 @@ struct graph {
 };
 
 Graph initializeGraph() {
-    int i;
+    int i, av, rua;
+    link l;
     Graph G = malloc(sizeof(struct graph));
     G->total = N*M;
-    G->c = malloc(C*sizeof(link));
-    G->s = malloc(S*sizeof(link));
-    G->adj = malloc((G->total+1) * sizeof(link));
-    for (i = 0; i <= S; i++) {
-        
-    }
+    G->c = malloc(C*sizeof(link)); /*começa no 0*/
+    G->s = malloc(S*sizeof(link)); /*começa no 0*/
+    G->adj = malloc((G->total+1) * sizeof(link)); /*começa no 1*/
+    
 
     for (i = 0; i <= G->total; i++) {
-        link x = malloc(sizeof(struct node));
-        x->n = i;
-        x->visited = 0;
-        G->adj[i] = x;
+        l = malloc(sizeof(struct node));
+        l->n = i;
+        l->visited = 0;
+        l->supermarket = 0;
+        l->citizen = 0;
+        G->adj[i] = l;
     }
+    
+    for (i = 0; i < S; i++) { /*ver se fica igual nas duas listas*/
+        scanf("%d %d", &av, &rua);
+        l = G->adj[av + (rua-1) * M];
+        l->supermarket = 1;
+        G->s[i] = l;
+    }
+
+    for (i = 0; i < C; i++) { /*ver se fica igual nas duas listas*/
+        scanf("%d %d", &av, &rua);
+        l = G->adj[av + (rua-1) * M];
+        l->citizen = 1;
+        G->s[i] = l;
+    }
+
     return G;
 }
 
 
-int** createList (int size) {
-    int** list;
+
+void printGrid(Graph G) {
     int i;
-    list = malloc(size * sizeof(int*));
-    for (i = 0; i < size; i++) {
-        list[i] = malloc(2 * sizeof(int));
-    }
     
-    return list;
-}
 
-void fillLists(int*** super, int*** citi) {
-    
-    int i;
-    int av, rua;
-
-    for (i = 0; i < S; i++) {
-        scanf("%d %d", &av, &rua);
-        (*super)[i][0] = av;
-        (*super)[i][1] = rua;
-        printf("%d %d\n", av, rua);
-    }
-
-    for (i = 0; i < C; i++) {
-        scanf("%d %d", &av, &rua);
-        (*citi)[i][0] = av;
-        (*citi)[i][1] = rua;
-        printf("%d %d\n", av, rua);
-
-    }
-
-}
-
-int isCitizen(int av, int rua, int **cidadaos) {
-    int i, c;
-    c = 0;
-    
-    for (i = 0; i < C; i++) {
-        if (av == cidadaos[i][0] && rua == cidadaos[i][1]) {
-            c++;
+    for (i = 1; i < G->total + 1; i++) {
+        if (G->adj[i]->citizen != 0) {
+                printf("C  ");
         }
-    }
-
-    return c;
-}
-
-int isSupermarket(int av, int rua, int **supermercados) {
-    int i, s;
-    s = 0;
-    
-    for (i = 0; i < S; i++) {
-        if (av == supermercados[i][0] && rua == supermercados[i][1]) {
-            s++;
+        else if (G->adj[i]->supermarket != 0) {
+                printf("S  ");   
         }
-    }
-
-    return s;
-}
-
-void printGrid(int **supermercados, int **cidadaos) {
-    int i, j;
-    int citi, super;
-    
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < M; j++) {
-            citi = isCitizen(j+1, i+1, cidadaos);
-            super = isSupermarket(j+1, i+1, supermercados);
-            if (citi != 0) {
-                printf("%d  ", citi);
-            }
-            else if (super != 0) {
-                printf("S  ");
-            }
-            else {
+        else {
                 printf(".  ");
-            }
+            }    
+        if (i % M == 0) {
+            printf("\n\n");
         }
-        printf("\n\n");
     }
 }
 
 int main() {
 
+    Graph G;
+
     scanf("%d %d", &M, &N); /*avenidas e ruas*/
     scanf("%d %d", &S, &C); /*supermercados e cidadaos*/
 
 
-    Graph G = initializeGraph();    
-    createLists(G);
-    
-    
-    fillLists(&supermarkets, &citizens);
-    
+    G = initializeGraph();
 
-    printGrid(supermarkets, citizens);
+    printGrid(G);
     
 
     return 0;
