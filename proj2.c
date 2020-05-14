@@ -20,6 +20,8 @@ struct node {
     int visited;
     int supermarket;
     int citizen;
+    int solution;
+    element path;
 };
 
 struct elem {
@@ -75,6 +77,20 @@ int deQueue(element* head) {
     n = q->n;
     free(q);
     return n;
+}
+
+void initializeBfsArrays(Graph G, int** color, int ** parent, int** suspects) {
+    int i;
+    *color = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
+    *parent = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
+    *suspects = malloc(C * sizeof(int));
+    for (i = 1; i < G->total + 1; i++) {
+        (*color)[i] = 0; /*white = 0 gray = 1 black = 2*/
+        (*parent)[i] = 0; 
+    }
+    for (i = 0; i < C; i++) {
+        (*suspects)[i] = 0;
+    }
 }
 
 Graph initializeGraph() {
@@ -143,136 +159,173 @@ void printGrid(Graph G) {
     }
 }
 
-/*void visitNeighbour(Graph G, int ** color, int ** parent, element head, int av, int rua) {
-    int neighbour;
-    neighbour = getN(av+1, rua);
+void setSolution(Graph G, int s, int* parent, int at) {
+    element p;
     
-    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0 && (av) < M) {
-        parent[neighbour] = j;
-        if (G->adj[neighbour]->supermarket) {
-            s = neighbour;
-            break;
-        }
-        color[neighbour] = 1;
-        enQueue(&head, neighbour);
+    p = NULL;
+    G->adj[s]->solution = at;
+    G->adj[at]->solution = s;
+    /*printf("SOLUCAO: %d\n", G->adj[s]->solution);*/
+    while (s != 0) {
+        G->adj[s]->visited = 1;
+        /*printf("%d ", s);*/
+        enQueue(&p, s);        
+        s = parent[s];
+        
     }
-}**/
+    G->adj[at]->path = p;
+    
+        
+}
 
-void resetVisited(Graph G) {
+int visitNeighbour(Graph G, int neighbour, int ** color, int ** parent, element *head, int j, int* s) {
+
+    if (G->adj[neighbour]->visited != 1 && (*color)[neighbour] == 0) {
+        (*parent)[neighbour] = j;
+        if (G->adj[neighbour]->supermarket) {
+            *s = neighbour;
+            return 1;
+        }
+        (*color)[neighbour] = 1;
+        enQueue(head, neighbour);
+    }
+    return 0;
+}
+
+void resetVisited(Graph G, int at) {
+    element l;
+    l = G->adj[at]->path;
+    while (l != NULL) {
+        if (!G->adj[l->n]->citizen && !G->adj[l->n]->supermarket) {
+            G->adj[l->n]->visited = 0;
+        }
+        l = l->next;
+    }
+}
+
+void setVisited(Graph G, int at) {
+    element l;
+    l = G->adj[at]->path;
+    while (l != NULL) {
+        G->adj[l->n]->visited = 1;
+        l = l->next;
+    }
+}
+
+void verifySuspect(int visited, int supermarket, int** suspects, int suspect) {
     int i;
-    link last;
-    for (i = 0; i <= G->total; i++) {
-        G->adj[i]->visited = 0;
+    if (visited && supermarket) {
+        for (i = 0; i < C && (*suspects)[i] != 0; i++) {
+            ;
+        }
+        (*suspects)[i] = suspect;
     }
-    last = G->c[0];
-    for (i = 0; i < C-1; i++) {
-        G->c[i] = G->c[i+1];
+}
+
+int bfsVisit(Graph G, int at, int backtrack) {
+
+    int *parent, *color, *suspects;
+    element head;
+    int j, s, av, rua, neighbour;
+    initializeBfsArrays(G, &color, &parent, &suspects);
+            
+    head = NULL;
+    enQueue(&head, at);  
+    s = 0;
+
+    /*printf("\nNOVO CICLO\n");*/
+    while ((j = deQueue(&head)) != 0) {
+                
+        getCoords(j, &av, &rua);
+                            
+        if((av+1) <= M) {
+            neighbour = getN(av+1, rua);
+            if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
+                break;
+            }
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+        }
+
+        if((av-1) > 0) {
+            neighbour = getN(av-1, rua);
+            if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
+                break;
+            }
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+        }
+
+        if((rua+1) <= N) {
+            neighbour = getN(av, rua+1);
+            if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
+                break;
+            }
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+        }
+
+        if((rua-1) > 0) {
+            neighbour = getN(av, rua-1);
+            if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
+                break;
+            }
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+        }
+
+        color[j] = 2;
     }
-    G->c[C-1] = last;
+            
+    while (head != NULL) {
+        deQueue(&head);
+    }
+    /*printf("\nPATH: at: %d | ", at);*/
+    if (s != 0) {
+        setSolution(G, s, parent, at);
+    }
+    else if (backtrack) {
+        int p, l;
+        for (p = 0; suspects[p] != 0; p++) {
+            l = G->adj[suspects[p]]->solution;
+            /*printf("%d\n", l);*/
+            resetVisited(G, suspects[p]);
+            if (bfsVisit(G, suspects[p], 0) == 1) {
+                setSolution(G, l, parent, at);
+                s = l;
+                break;
+            }
+            else {
+                setVisited(G, suspects[p]);
+            }
+            
+        }
+    }
+    
+    free(color);
+    free(parent);
+    free(suspects);
+    if (s != 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+    /*printf("\n");*/
 }
 
 void bfs(Graph G) {
-    int *parent, *color;
-    element head;
-    int i, j, h, k, av, rua, s, neighbour;
+    
+    int i;
     int paths = 0;
-    int finalpaths = 0;
-    for (k = 0; k < C; k++) {
-        paths = 0;
-        /*printf("\nNUEVA ORDEM\n\n");*/
-        for (i = 0; i < C; i++) {
-            color = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
-            parent = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
-            for (h = 1; h < G->total + 1; h++) {
-                color[h] = 0; /*white = 0 gray = 1 black = 2*/
-                parent[h] = 0; 
-            }
-            head = NULL;
-            enQueue(&head, G->c[i]->n);
-            s = 0;
-            /*printf("NOVO CICLO\n");*/
-            while ((j = deQueue(&head)) != 0) {
-                getCoords(j, &av, &rua);
-                if((av+1) <= M) {
-                    neighbour = getN(av+1, rua);
-                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
-                        parent[neighbour] = j;
-                        if (G->adj[neighbour]->supermarket) {
-                            s = neighbour;
-                            break;
-                        }
-                        color[neighbour] = 1;
-                        enQueue(&head, neighbour);
-                    }
-                }
 
-                if((av-1) > 0) {
-                    neighbour = getN(av-1, rua);
-                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
-                        parent[neighbour] = j;
-                        if (G->adj[neighbour]->supermarket) {
-                            s = neighbour;
-                            break;
-                        }
-                        color[neighbour] = 1;
-                        enQueue(&head, neighbour);
-                    }
-                }
-
-                if((rua+1) <= N) {
-                    neighbour = getN(av, rua+1);
-                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
-                        parent[neighbour] = j;
-                        if (G->adj[neighbour]->supermarket) {
-                            s = neighbour;
-                            break;
-                        }
-                        color[neighbour] = 1;
-                        enQueue(&head, neighbour);
-                    }
-                }
-
-                if((rua-1) > 0) {
-                    neighbour = getN(av, rua-1);
-                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
-                        parent[neighbour] = j;
-                        if (G->adj[neighbour]->supermarket) {
-                            s = neighbour;
-                            break;
-                        }
-                        color[neighbour] = 1;
-                        enQueue(&head, neighbour);
-                    }
-                }
-
-                color[getN(av, rua)] = 2;
-            }
-            while (head != NULL) {
-                deQueue(&head);
-            }
-            /*printf("PATH: ");*/
-            if (s != 0) {
-                paths++;
-            }
-            while (s != 0) {
-                G->adj[s]->visited = 1;
-                /*printf("%d ", s);*/
-                s = parent[s];
-            }
-            free(color);
-            free(parent);
-            /*printf("\n");*/
+    
+    paths = 0;
+    /*printf("\nNUEVA ORDEM\n\n");*/
+    for (i = 0; i < C; i++) {
+        if (bfsVisit(G, G->c[i]->n, 1)) {
+            paths++;
         }
-        if (paths > finalpaths) {
-            finalpaths = paths;
-        }
-        if (finalpaths == C || finalpaths == S) {
-            break;
-        }
-        resetVisited(G);
     }
+    
 
-    printf("%d\n", finalpaths);
+    printf("%d\n", paths);
 }
 
 int main() {
