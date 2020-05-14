@@ -24,6 +24,7 @@ struct node {
     int supermarket;
     int citizen;
     int solution;
+    int distance;
     element path;
 };
 
@@ -97,8 +98,8 @@ void initializeBfsArrays(Graph G, int** color, int ** parent, int** suspects) {
 }
 
 Graph initializeGraph() {
-    int i, av, rua;
-    laink l;
+    int i, av, rua, j;
+    laink l, k;
     Graph G = malloc(sizeof(struct graph));
     G->total = N*M;
     G->c = malloc(C*sizeof(laink)); /*começa no 0*/
@@ -127,8 +128,31 @@ Graph initializeGraph() {
         l = G->adj[getN(av, rua)];
         l->citizen = 1;
         l->visited = 1;
+        l->distance = av;
+        if (M-av+1 < l->distance) {
+            l->distance = av-M+1;
+        }
+        if (rua < l->distance) {
+            l->distance = rua;
+        }
+        if (N-rua+1 < l->distance) {
+            l->distance = N-rua+1;
+        }
         G->c[i] = l;
     }
+    
+    for (i = 1; i < C; i++) {
+        k = G->c[i];
+        j = i - 1;
+
+        while (j >= 0 && G->c[j]->distance > k->distance) {
+            G->c[j+1] = G->c[j];
+            j--;
+        }
+        G->c[j+1] = k;
+        
+    }
+
 
     return G;
 }
@@ -330,8 +354,11 @@ void bfs(Graph G) {
     
     paths = 0;
     for (i = 0; i < C; i++) {
-        if (bfsVisit(G, G->c[i]->n, 2)) {
+        if (bfsVisit(G, G->c[i]->n, 3)) {
             paths++;
+            if (paths == S) {
+                break;
+            }
         }
     }
     
