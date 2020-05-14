@@ -11,9 +11,11 @@ int S = 0;                                      /* número de supermercados */
 int M = 0;                                      /* número de avenidas (vertical) */
 int N = 0;                                      /* número de ruas (horizontal) */
 	
+int print = 0;
+
 typedef struct graph *Graph;
 typedef struct elem *element;
-typedef struct node *link;
+typedef struct node *laink;
 
 struct node {
     int n;  /*precisa de n? ja ta na posicao mas ok*/                                    /* cada elemento das listas, guarda um índice de um vertice */
@@ -31,9 +33,9 @@ struct elem {
 
 struct graph {
     int total;                                      /* número de vértices (vertexes) */
-    link* adj;
-    link* c;
-    link* s;
+    laink* adj;
+    laink* c;
+    laink* s;
 };
 
 element createElement(int n) {
@@ -95,12 +97,12 @@ void initializeBfsArrays(Graph G, int** color, int ** parent, int** suspects) {
 
 Graph initializeGraph() {
     int i, av, rua;
-    link l;
+    laink l;
     Graph G = malloc(sizeof(struct graph));
     G->total = N*M;
-    G->c = malloc(C*sizeof(link)); /*começa no 0*/
-    G->s = malloc(S*sizeof(link)); /*começa no 0*/
-    G->adj = malloc((G->total+1) * sizeof(link)); /*começa no 1*/
+    G->c = malloc(C*sizeof(laink)); /*começa no 0*/
+    G->s = malloc(S*sizeof(laink)); /*começa no 0*/
+    G->adj = malloc((G->total+1) * sizeof(laink)); /*começa no 1*/
     
 
     for (i = 0; i <= G->total; i++) {
@@ -165,10 +167,12 @@ void setSolution(Graph G, int s, int* parent, int at) {
     p = NULL;
     G->adj[s]->solution = at;
     G->adj[at]->solution = s;
-    /*printf("SOLUCAO: %d\n", G->adj[s]->solution);*/
+    if (print == 1)
+        printf("SOLUCAO: %d\n", G->adj[s]->solution);
     while (s != 0) {
         G->adj[s]->visited = 1;
-        /*printf("%d ", s);*/
+        if (print == 1)
+            printf("%d ", s);
         enQueue(&p, s);        
         s = parent[s];
         
@@ -212,9 +216,9 @@ void setVisited(Graph G, int at) {
     }
 }
 
-void verifySuspect(int visited, int supermarket, int** suspects, int suspect) {
+void verifySuspect(int visited, int supermarket, int** suspects, int suspect, int at) {
     int i;
-    if (visited && supermarket) {
+    if (visited && supermarket && suspect != at) {
         for (i = 0; i < C && (*suspects)[i] != 0; i++) {
             ;
         }
@@ -232,8 +236,8 @@ int bfsVisit(Graph G, int at, int backtrack) {
     head = NULL;
     enQueue(&head, at);  
     s = 0;
-
-    /*printf("\nNOVO CICLO\n");*/
+    if (print == 1)
+        printf("\nNOVO CICLO\n");
     while ((j = deQueue(&head)) != 0) {
                 
         getCoords(j, &av, &rua);
@@ -243,7 +247,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
             if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
                 break;
             }
-            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution, at);
         }
 
         if((av-1) > 0) {
@@ -251,7 +255,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
             if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
                 break;
             }
-            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution, at);
         }
 
         if((rua+1) <= N) {
@@ -259,7 +263,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
             if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
                 break;
             }
-            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution, at);
         }
 
         if((rua-1) > 0) {
@@ -267,7 +271,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
             if (visitNeighbour(G, neighbour, &color, &parent, &head, j, &s)) {
                 break;
             }
-            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution);
+            verifySuspect(G->adj[neighbour]->visited, G->adj[neighbour]->supermarket, &suspects, G->adj[neighbour]->solution, at);
         }
 
         color[j] = 2;
@@ -276,22 +280,26 @@ int bfsVisit(Graph G, int at, int backtrack) {
     while (head != NULL) {
         deQueue(&head);
     }
-    /*printf("\nPATH: at: %d | ", at);*/
+    if (print == 1)
+        printf("\nPATH: at: %d | ", at);
     if (s != 0) {
         setSolution(G, s, parent, at);
     }
     else if (backtrack) {
         int p, l;
         for (p = 0; suspects[p] != 0; p++) {
+            if (print == 1)
+                printf("SUSPECT: %d\n", suspects[p]);
             l = G->adj[suspects[p]]->solution;
-            /*printf("%d\n", l);*/
             resetVisited(G, suspects[p]);
-            if (bfsVisit(G, suspects[p], 0) == 1) {
+            if (bfsVisit(G, suspects[p], 1) == 1) {
                 setSolution(G, l, parent, at);
                 s = l;
                 break;
             }
             else {
+                if (print == 1)
+                    printf("VOLTEI\n");
                 setVisited(G, suspects[p]);
             }
             
@@ -307,7 +315,8 @@ int bfsVisit(Graph G, int at, int backtrack) {
     else {
         return 0;
     }
-    /*printf("\n");*/
+    if (print == 1)
+        printf("\n");
 }
 
 void bfs(Graph G) {
@@ -317,14 +326,13 @@ void bfs(Graph G) {
 
     
     paths = 0;
-    /*printf("\nNUEVA ORDEM\n\n");*/
     for (i = 0; i < C; i++) {
         if (bfsVisit(G, G->c[i]->n, 1)) {
             paths++;
         }
     }
     
-
+    
     printf("%d\n", paths);
 }
 
@@ -337,8 +345,8 @@ int main() {
 
 
     G = initializeGraph();
-
-    /*printGrid(G);*/
+    if (print == 1)
+        printGrid(G);
     bfs(G);
 
     return 0;
