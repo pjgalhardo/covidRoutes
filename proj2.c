@@ -286,7 +286,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
     if (s != 0) {
         setSolution(G, s, parent, at);
     }
-    else if (backtrack) {
+    else if (backtrack--) {
         int p, l;
         for (p = 0; suspects[p] != 0; p++) {
             if (print==1)
@@ -295,7 +295,7 @@ int bfsVisit(Graph G, int at, int backtrack) {
                 printf("SUSPECT: %d\n", suspects[p]);
             l = G->adj[suspects[p]]->solution;
             resetVisited(G, suspects[p]);
-            if (bfsVisit(G, suspects[p], 1) == 1) {
+            if (bfsVisit(G, suspects[p], backtrack) == 1) {
                 setSolution(G, l, parent, at);
                 s = l;
                 break;
@@ -330,7 +330,7 @@ void bfs(Graph G) {
     
     paths = 0;
     for (i = 0; i < C; i++) {
-        if (bfsVisit(G, G->c[i]->n, 1)) {
+        if (bfsVisit(G, G->c[i]->n, 2)) {
             paths++;
         }
     }
