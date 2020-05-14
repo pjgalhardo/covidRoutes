@@ -12,6 +12,7 @@ int M = 0;                                      /* número de avenidas (vertical
 int N = 0;                                      /* número de ruas (horizontal) */
 	
 typedef struct graph *Graph;
+typedef struct elem *element;
 typedef struct node *link;
 
 struct node {
@@ -21,6 +22,10 @@ struct node {
     int citizen;
 };
 
+struct elem {
+    int n;
+    element next;
+};
 
 struct graph {
     int total;                                      /* número de vértices (vertexes) */
@@ -28,6 +33,49 @@ struct graph {
     link* c;
     link* s;
 };
+
+element createElement(int n) {
+    element q;
+    q = malloc(sizeof(struct elem)); /*começa no 1*/
+    q->n = n;
+    q->next = NULL;
+    return q;
+}
+
+int getN(int av, int rua) {
+    return av + (rua-1) * M;
+}
+
+void enQueue(element *head, int n) {
+    element i, q;
+    q = createElement(n);
+
+    
+    if (*head == NULL) {
+        *head = q;
+    }
+    else {
+        for (i = *head; i->next != NULL; i = i->next) {
+            ;
+        }
+    
+        i->next = q;
+    }
+}
+
+int deQueue(element* head) {
+    element q;
+    int n;
+    
+    if (*head == NULL) {
+        return 0;
+    }
+    q = *head;
+    *head = (*head)->next;
+    n = q->n;
+    free(q);
+    return n;
+}
 
 Graph initializeGraph() {
     int i, av, rua;
@@ -50,22 +98,30 @@ Graph initializeGraph() {
     
     for (i = 0; i < S; i++) { /*ver se fica igual nas duas listas*/
         scanf("%d %d", &av, &rua);
-        l = G->adj[av + (rua-1) * M];
+        l = G->adj[getN(av, rua)];
         l->supermarket = 1;
         G->s[i] = l;
     }
 
     for (i = 0; i < C; i++) { /*ver se fica igual nas duas listas*/
         scanf("%d %d", &av, &rua);
-        l = G->adj[av + (rua-1) * M];
+        l = G->adj[getN(av, rua)];
         l->citizen = 1;
-        G->s[i] = l;
+        l->visited = 1;
+        G->c[i] = l;
     }
 
     return G;
 }
 
-
+void getCoords(int n, int *av, int *rua) {
+    *av = (n % M);
+    *rua = (n / M);
+    if (*av == 0)
+        *av = M;
+    else
+        (*rua)++;
+}
 
 void printGrid(Graph G) {
     int i;
@@ -87,6 +143,133 @@ void printGrid(Graph G) {
     }
 }
 
+/*void visitNeighbour(Graph G, int ** color, int ** parent, element head, int av, int rua) {
+    int neighbour;
+    neighbour = getN(av+1, rua);
+    
+    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0 && (av) < M) {
+        parent[neighbour] = j;
+        if (G->adj[neighbour]->supermarket) {
+            s = neighbour;
+            break;
+        }
+        color[neighbour] = 1;
+        enQueue(&head, neighbour);
+    }
+}**/
+
+void resetVisited(Graph G) {
+    int i;
+    link last;
+    for (i = 0; i <= G->total; i++) {
+        G->adj[i]->visited = 0;
+    }
+    last = G->c[0];
+    for (i = 0; i < C-1; i++) {
+        G->c[i] = G->c[i+1];
+    }
+    G->c[C-1] = last;
+}
+
+void bfs(Graph G) {
+    int *parent, *color;
+    element head;
+    int i, j, h, k, av, rua, s, neighbour;
+    int paths = 0;
+    int finalpaths = 0;
+    for (k = 0; k < C; k++) {
+        paths = 0;
+        /*printf("\nNUEVA ORDEM\n\n");*/
+        for (i = 0; i < C; i++) {
+            color = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
+            parent = malloc((G->total+1) * sizeof(int)); /*começa no 1*/
+            for (h = 1; h < G->total + 1; h++) {
+                color[h] = 0; /*white = 0 gray = 1 black = 2*/
+                parent[h] = 0; 
+            }
+            head = NULL;
+            enQueue(&head, G->c[i]->n);
+            s = 0;
+            /*printf("NOVO CICLO\n");*/
+            while ((j = deQueue(&head)) != 0) {
+                getCoords(j, &av, &rua);
+                if((av+1) <= M) {
+                    neighbour = getN(av+1, rua);
+                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
+                        parent[neighbour] = j;
+                        if (G->adj[neighbour]->supermarket) {
+                            s = neighbour;
+                            break;
+                        }
+                        color[neighbour] = 1;
+                        enQueue(&head, neighbour);
+                    }
+                }
+
+                if((av-1) > 0) {
+                    neighbour = getN(av-1, rua);
+                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
+                        parent[neighbour] = j;
+                        if (G->adj[neighbour]->supermarket) {
+                            s = neighbour;
+                            break;
+                        }
+                        color[neighbour] = 1;
+                        enQueue(&head, neighbour);
+                    }
+                }
+
+                if((rua+1) <= N) {
+                    neighbour = getN(av, rua+1);
+                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
+                        parent[neighbour] = j;
+                        if (G->adj[neighbour]->supermarket) {
+                            s = neighbour;
+                            break;
+                        }
+                        color[neighbour] = 1;
+                        enQueue(&head, neighbour);
+                    }
+                }
+
+                if((rua-1) > 0) {
+                    neighbour = getN(av, rua-1);
+                    if (G->adj[neighbour]->visited != 1 && color[neighbour] == 0) {
+                        parent[neighbour] = j;
+                        if (G->adj[neighbour]->supermarket) {
+                            s = neighbour;
+                            break;
+                        }
+                        color[neighbour] = 1;
+                        enQueue(&head, neighbour);
+                    }
+                }
+
+                color[getN(av, rua)] = 2;
+            }
+            /*printf("PATH: ");*/
+            if (s != 0) {
+                paths++;
+            }
+            while (s != 0) {
+                G->adj[s]->visited = 1;
+                /*printf("%d ", s);*/
+                s = parent[s];
+            }
+            /*printf("\n");*/
+        }
+        if (paths > finalpaths) {
+            finalpaths = paths;
+        }
+        if (finalpaths == C || finalpaths == S) {
+            break;
+        }
+        resetVisited(G);
+    }
+
+    printf("%d", finalpaths);
+}
+
 int main() {
 
     Graph G;
@@ -97,8 +280,8 @@ int main() {
 
     G = initializeGraph();
 
-    printGrid(G);
-    
+    /*printGrid(G);*/
+    bfs(G);
 
     return 0;
 }
