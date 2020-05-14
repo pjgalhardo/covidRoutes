@@ -247,6 +247,9 @@ void bfs(Graph G) {
 
                 color[getN(av, rua)] = 2;
             }
+            while (head != NULL) {
+                deQueue(&head);
+            }
             /*printf("PATH: ");*/
             if (s != 0) {
                 paths++;
@@ -256,6 +259,8 @@ void bfs(Graph G) {
                 /*printf("%d ", s);*/
                 s = parent[s];
             }
+            free(color);
+            free(parent);
             /*printf("\n");*/
         }
         if (paths > finalpaths) {
@@ -267,7 +272,7 @@ void bfs(Graph G) {
         resetVisited(G);
     }
 
-    printf("%d", finalpaths);
+    printf("%d\n", finalpaths);
 }
 
 int main() {
