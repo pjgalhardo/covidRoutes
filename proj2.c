@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 
 int C = 0;                                      /* número de cidadaos */
@@ -288,6 +289,8 @@ int bfsVisit(Graph G, int at, int backtrack) {
     else if (backtrack) {
         int p, l;
         for (p = 0; suspects[p] != 0; p++) {
+            if (print==1)
+                sleep(1);
             if (print == 1)
                 printf("SUSPECT: %d\n", suspects[p]);
             l = G->adj[suspects[p]]->solution;
